@@ -4,6 +4,7 @@
   "description": "Patch builder for romplers",
   "main": "electron/main.js",
   "scripts": {
+
     "start": "concurrently \"npm:start-backend\" \"npm:start-frontend\"",
     "start-backend": "python src/app.py",
     "start-frontend": "electron ."
