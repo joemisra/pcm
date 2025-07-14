@@ -2,6 +2,7 @@ const midiPortsSelect = document.getElementById('midi-ports');
 const openPortButton = document.getElementById('open-port');
 const closePortButton = document.getElementById('close-port');
 const patchDataPre = document.getElementById('patch-data');
+const patchTypeSelect = document.getElementById('patch-type');
 
 function getMidiPorts() {
   fetch('http://127.0.0.1:5000/api/midi/ports')
@@ -42,8 +43,22 @@ function getPatch() {
     });
 }
 
+function selectPatch() {
+  const selectedPatch = patchTypeSelect.value;
+  fetch('http://127.0.0.1:5000/api/patch/select', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ patch_name: selectedPatch })
+  }).then(() => {
+    getPatch();
+  });
+}
+
 openPortButton.addEventListener('click', openPort);
 closePortButton.addEventListener('click', closePort);
+patchTypeSelect.addEventListener('change', selectPatch);
 
 getMidiPorts();
 getPatch();
