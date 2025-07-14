@@ -1,0 +1,14 @@
+{
+  "name": "pcm",
+  "version": "1.0.0",
+  "description": "Patch builder for romplers",
+  "main": "electron/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^28.0.0"
+  }
+}
