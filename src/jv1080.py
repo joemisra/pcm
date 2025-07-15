@@ -11,7 +11,7 @@ class JV1080Patch(Patch):
 
     def to_sysex(self):
         # In a real implementation, this would construct a SysEx message from self.data
-        pass
+        return []
 
     @classmethod
     def from_sysex(cls, sysex_data):
