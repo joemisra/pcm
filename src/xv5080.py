@@ -6,18 +6,31 @@ class XV5080Patch(JV1080Patch):
         super().__init__(name, data)
         self.modulation_matrix = ModulationMatrix()
         self.macros = {}
-    def get_parameter(self, address):
+    def get_parameter(self, address, visited=None):
+        if visited is None:
+            visited = set()
+        if address in visited:
+            # Avoid infinite recursion
+            return self.data.get(address, 0)
+        visited.add(address)
+
         value = self.data.get(address, 0)
         for mod in self.modulation_matrix.modulations:
             if mod.destination == address:
-                source_value = self.get_parameter(mod.source)
-                value += source_value * mod.amount
-        return value
+                source_value = self.get_parameter(mod.source, visited)
+                value += int(source_value * mod.amount)
+
+        # Clamp the value to the valid MIDI range (0-127)
+        return max(0, min(127, value))
 
     def set_parameter(self, address, value):
         if address in self.macros:
-            for p in self.macros[address].parameters:
-                self.set_parameter(p, value)
+            macro = self.macros[address]
+            scaled_value = int(
+                ((value / 127) * (macro.max_value - macro.min_value)) + macro.min_value
+            )
+            for p in macro.parameters:
+                self.set_parameter(p, scaled_value)
         else:
             self.data[address] = value
 
@@ -42,6 +55,16 @@ class XV5080Patch(JV1080Patch):
 
     def _value_to_bytes(self, value):
         return [value]
+
+    def to_dict(self):
+        return {
+            'name': self.name,
+            'data': self.data,
+            'modulation_matrix': {
+                'modulations': [mod.__dict__ for mod in self.modulation_matrix.modulations]
+            },
+            'macros': {str(address): macro.__dict__ for address, macro in self.macros.items()}
+        }
 
     def _calculate_checksum(self, data):
         checksum = 0
