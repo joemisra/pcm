@@ -1,13 +1,25 @@
 from src.jv1080 import JV1080Patch
+from src.patch import ModulationMatrix, Macro
 
 class XV5080Patch(JV1080Patch):
+    def __init__(self, name, data):
+        super().__init__(name, data)
+        self.modulation_matrix = ModulationMatrix()
+        self.macros = {}
     def get_parameter(self, address):
-        # Placeholder implementation
-        return self.data.get(address, 0)
+        value = self.data.get(address, 0)
+        for mod in self.modulation_matrix.modulations:
+            if mod.destination == address:
+                source_value = self.get_parameter(mod.source)
+                value += source_value * mod.amount
+        return value
 
     def set_parameter(self, address, value):
-        # Placeholder implementation
-        self.data[address] = value
+        if address in self.macros:
+            for p in self.macros[address].parameters:
+                self.set_parameter(p, value)
+        else:
+            self.data[address] = value
 
     def to_sysex(self):
         # Placeholder implementation
