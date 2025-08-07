@@ -3,6 +3,8 @@ const openPortButton = document.getElementById('open-port');
 const closePortButton = document.getElementById('close-port');
 const patchDataPre = document.getElementById('patch-data');
 const patchTypeSelect = document.getElementById('patch-type');
+const sendSysexButton = document.getElementById('send-sysex');
+const setParameterButton = document.getElementById('set-parameter');
 
 function getMidiPorts() {
   fetch('http://127.0.0.1:5000/api/midi/ports')
@@ -168,6 +170,28 @@ function selectPatch() {
 openPortButton.addEventListener('click', openPort);
 closePortButton.addEventListener('click', closePort);
 patchTypeSelect.addEventListener('change', selectPatch);
+
+sendSysexButton.addEventListener('click', () => {
+  fetch('http://127.0.0.1:5000/api/patch/send', { method: 'POST' })
+    .then(response => response.json())
+    .then(result => {
+      if (result.status !== 'success') {
+        alert(`Error: ${result.message}`);
+      }
+    });
+});
+
+setParameterButton.addEventListener('click', () => {
+  const address = parseInt(prompt('Parameter address (hex or decimal):', '0x100'));
+  const value = parseInt(prompt('Value (0-127):', '64'));
+  if (!Number.isNaN(address) && !Number.isNaN(value)) {
+    fetch('http://127.0.0.1:5000/api/patch/parameter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address, value })
+    }).then(() => getPatch());
+  }
+});
 
 getMidiPorts();
 getPatch();

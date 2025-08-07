@@ -1,14 +1,19 @@
 from flask import Flask, jsonify, request
+from flask_cors import CORS
 from src.midi import MidiController
-from src.patch import Patch
+from src.patch import Patch, Modulation, Macro
 from src.jv1080 import JV1080Patch
 from src.xv5080 import XV5080Patch
+from src.mu128 import MU128Patch
 
 app = Flask(__name__)
+CORS(app)
+
 midi_controller = MidiController()
 patches = {
     'JV-1080': JV1080Patch("Default JV-1080 Patch", {}),
-    'XV-5080': XV5080Patch("Default XV-5080 Patch", {})
+    'XV-5080': XV5080Patch("Default XV-5080 Patch", {}),
+    'MU-128': MU128Patch("Default MU-128 Patch", {})
 }
 current_patch = 'JV-1080'
 
@@ -93,6 +98,18 @@ def select_patch():
         return jsonify({'status': 'success'})
     else:
         return jsonify({'status': 'error', 'message': 'Patch not found'}), 404
+
+@app.route('/api/patch/send', methods=['POST'])
+def send_patch():
+    patch = patches[current_patch]
+    try:
+        sysex_data = patch.to_sysex()
+        if not isinstance(sysex_data, list) or not sysex_data:
+            return jsonify({'status': 'error', 'message': 'Patch cannot be converted to SysEx'}), 400
+        midi_controller.send_sysex(sysex_data)
+        return jsonify({'status': 'success'})
+    except Exception as e:
+        return jsonify({'status': 'error', 'message': str(e)}), 400
 
 if __name__ == '__main__':
     app.run(debug=True)
