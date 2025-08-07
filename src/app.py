@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+import random
 from src.midi import MidiController
 from src.patch import Patch, Modulation, Macro
 from src.jv1080 import JV1080Patch
@@ -88,6 +89,42 @@ def remove_macro(address):
         return jsonify({'status': 'success'})
     else:
         return jsonify({'status': 'error', 'message': 'Macro not found'}), 404
+
+@app.route('/api/patch/macro/<int:address>/apply', methods=['POST'])
+def apply_macro(address):
+    value = request.json.get('value', 64)
+    patch = patches[current_patch]
+    if address not in patch.macros:
+        return jsonify({'status': 'error', 'message': 'Macro not found'}), 404
+    macro = patch.macros[address]
+    scaled_value = macro.scale(value)
+    for param_addr in macro.parameters:
+        patch.set_parameter(param_addr, scaled_value)
+    return jsonify({'status': 'success'})
+
+
+@app.route('/api/patch/macro/randomize', methods=['POST'])
+def randomize_macros():
+    # Optional filters
+    include_macros = request.json.get('addresses')  # list of addresses to include
+    intensity = request.json.get('intensity', 1.0)  # scale 0..1 of how extreme the randomization is
+    randomness = max(0.0, min(1.0, float(intensity)))
+
+    patch = patches[current_patch]
+    macro_items = patch.macros.items()
+    if include_macros:
+        include_set = set(include_macros)
+        macro_items = [(addr, m) for addr, m in macro_items if addr in include_set]
+
+    for addr, macro in macro_items:
+        base = 64
+        span = int(64 * randomness)
+        value = max(0, min(127, base + random.randint(-span, span)))
+        scaled_value = macro.scale(value)
+        for param_addr in macro.parameters:
+            patch.set_parameter(param_addr, scaled_value)
+
+    return jsonify({'status': 'success'})
 
 @app.route('/api/patch/select', methods=['POST'])
 def select_patch():

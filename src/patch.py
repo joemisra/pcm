@@ -49,3 +49,11 @@ class Macro:
         self.parameters = parameters
         self.min_value = min_value
         self.max_value = max_value
+
+    def scale(self, raw_0_127_value):
+        if raw_0_127_value < 0:
+            raw_0_127_value = 0
+        if raw_0_127_value > 127:
+            raw_0_127_value = 127
+        scaled = int(((raw_0_127_value / 127) * (self.max_value - self.min_value)) + self.min_value)
+        return max(self.min_value, min(self.max_value, scaled))
