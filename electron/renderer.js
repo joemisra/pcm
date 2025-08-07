@@ -3,6 +3,8 @@ const openPortButton = document.getElementById('open-port');
 const closePortButton = document.getElementById('close-port');
 const patchDataPre = document.getElementById('patch-data');
 const patchTypeSelect = document.getElementById('patch-type');
+const sendSysexButton = document.getElementById('send-sysex');
+const setParameterButton = document.getElementById('set-parameter');
 
 function getMidiPorts() {
   fetch('http://127.0.0.1:5000/api/midi/ports')
@@ -89,6 +91,7 @@ modulationMatrix.addEventListener('click', (event) => {
 
 const macros = document.getElementById('macros').getElementsByTagName('tbody')[0];
 const addMacroButton = document.getElementById('add-macro');
+const randomizeMacrosButton = document.getElementById('randomize-macros');
 
 function getPatch() {
   fetch('http://127.0.0.1:5000/api/patch')
@@ -114,7 +117,10 @@ function renderMacros(macrosData) {
             <td>${macro.parameters.join(', ')}</td>
             <td>${macro.min_value}</td>
             <td>${macro.max_value}</td>
-            <td><button class="remove-macro" data-address="${address}">Remove</button></td>
+            <td>
+              <button class="apply-macro" data-address="${address}">Apply</button>
+              <button class="remove-macro" data-address="${address}">Remove</button>
+            </td>
         `;
     }
 }
@@ -149,6 +155,16 @@ macros.addEventListener('click', (event) => {
         .then(() => {
             getPatch();
         });
+    } else if (event.target.classList.contains('apply-macro')) {
+        const address = event.target.dataset.address;
+        const value = parseInt(prompt('Macro value (0-127):', '64'));
+        if (!Number.isNaN(value)) {
+          fetch(`http://127.0.0.1:5000/api/patch/macro/${address}/apply`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ value })
+          }).then(() => getPatch());
+        }
     }
 });
 
@@ -168,6 +184,37 @@ function selectPatch() {
 openPortButton.addEventListener('click', openPort);
 closePortButton.addEventListener('click', closePort);
 patchTypeSelect.addEventListener('change', selectPatch);
+
+sendSysexButton.addEventListener('click', () => {
+  fetch('http://127.0.0.1:5000/api/patch/send', { method: 'POST' })
+    .then(response => response.json())
+    .then(result => {
+      if (result.status !== 'success') {
+        alert(`Error: ${result.message}`);
+      }
+    });
+});
+
+setParameterButton.addEventListener('click', () => {
+  const address = parseInt(prompt('Parameter address (hex or decimal):', '0x100'));
+  const value = parseInt(prompt('Value (0-127):', '64'));
+  if (!Number.isNaN(address) && !Number.isNaN(value)) {
+    fetch('http://127.0.0.1:5000/api/patch/parameter', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ address, value })
+    }).then(() => getPatch());
+  }
+});
+
+randomizeMacrosButton.addEventListener('click', () => {
+  const intensity = parseFloat(prompt('Randomization intensity (0..1):', '0.8'));
+  fetch('http://127.0.0.1:5000/api/patch/macro/randomize', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ intensity: isNaN(intensity) ? 1.0 : intensity })
+  }).then(() => getPatch());
+});
 
 getMidiPorts();
 getPatch();

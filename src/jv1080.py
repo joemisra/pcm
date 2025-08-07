@@ -2,15 +2,13 @@ from src.patch import Patch
 
 class JV1080Patch(Patch):
     def get_parameter(self, address):
-        # In a real implementation, this would read from self.data
-        pass
+        return self.data.get(address, 0)
 
     def set_parameter(self, address, value):
-        # In a real implementation, this would write to self.data
-        pass
+        self.data[address] = value
 
     def to_sysex(self):
-        # In a real implementation, this would construct a SysEx message from self.data
+        # Placeholder empty SysEx for JV-1080 (not implemented)
         return []
 
     @classmethod
